@@ -72,7 +72,7 @@ class byte_indexOracleAttack():
                     req_string = "%s%s" % (self.hex_xor_128(custom_block, padding),
                         blocks[block_index+1].hex())
                     self.debug_progress(block_index, byte_index, guess)
-                    if(self.url_request(req_string)):
+                    if(self.url_request(req_string) and guess > 5):
                         message_block.insert(0, self.get_xor(byte, guess))
                         plaintext[block_index] = "%s%s" % (chr(guess),
                             plaintext[block_index])

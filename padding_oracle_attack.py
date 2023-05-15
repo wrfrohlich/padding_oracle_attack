@@ -54,7 +54,7 @@ class byte_indexOracleAttack():
             byte_index, guess))
 
     def debug_partial_result(self, plaintext):
-        print("Partial result: '%s'" % (plaintext))
+        print("Partial result: %s" % (plaintext))
 
     def attack(self, query = None):
         if query == None:
@@ -81,8 +81,9 @@ class byte_indexOracleAttack():
                     if guess == 255:
                         exit()
             self.debug_partial_result("".join(plaintext))
+        return plaintext
 
 if __name__ == '__main__':
     byte_index_oracle = byte_indexOracleAttack()
     plaintext = byte_index_oracle.attack()
-    print(plaintext)
+    print("\nResult:\n%s" % ("".join(plaintext)))

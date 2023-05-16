@@ -10,8 +10,11 @@ class byte_indexOracleAttack():
                                     "4a61044426fb515dad3f21f18aa577c0",
                                     "bdf302936266926ff37dbf7035d5eeb4")
 
-    def url_request(self, q):
-        target = "%s%s" % (self.url, request.quote(q))
+    def oracle(self, query):
+        '''
+        Check with the "Oracle" if the ciphertext is valid or not
+        '''
+        target = "%s%s" % (self.url, request.quote(query))
         req = request.Request(target)
         try:
             request.urlopen(req)
@@ -24,22 +27,44 @@ class byte_indexOracleAttack():
                 exit()
 
     def hex_to_byte(self, value):
+        '''
+        Convert the value from hex to byte
+        '''
         return binascii.unhexlify(value)
 
     def split_blocks(self, query):
+        '''
+        Split the query into blocks with 16 bytes
+        '''
         blocks = []
         for i in range(0, len(query), self.block_size):
             blocks.append(query[i:i+self.block_size])
         return(blocks)
-    
+
     def get_xor(self, a, b):
+        '''
+        Perform the xor between two values
+        '''
         return bytes([a ^ b])
 
-    def get_custom_padding(self, byte_index):
+    def get_padding_standard(self, byte_index):
+        '''
+        Form the padding standard following the PKCS#7 according to the round
+        '''
         zero_padding = "00"*(16-byte_index)
         hex_padding = f"{byte_index:02x}"*byte_index
         return "%s%s" % (zero_padding, hex_padding)
-    
+
+    def check_range(self, block_index, byte_index):
+        '''
+        Checks if it is the first character of the last block, if so, the guess is made
+        from 15 to 0
+        '''
+        if block_index == 2 and byte_index == 1:
+            return 15, 0, -1
+        else:
+            return 0, 256, 1
+
     def get_custom_block(self, block, byte_index, byte, guess, message_block):
         custom_block = block[0:16 - byte_index]
         byte_xor = self.get_xor(byte, guess)
@@ -48,7 +73,7 @@ class byte_indexOracleAttack():
 
     def hex_xor_128(self, a, b):
         return "{0:032x}".format(int(a, base=16) ^ int(b, base=16))
-    
+
     def debug_progress(self, block_index, byte_index, guess):
         print("Block: %02d - Byte: %02d - Guess: %03d" % (block_index,
             byte_index, guess))
@@ -57,6 +82,9 @@ class byte_indexOracleAttack():
         print("Partial result: %s" % (plaintext))
 
     def attack(self, query = None):
+        '''
+        Launch attack to discover plaintext
+        '''
         if query == None:
             query = self.query
         query = self.hex_to_byte(query)
@@ -65,14 +93,15 @@ class byte_indexOracleAttack():
         for block_index, block in enumerate(blocks[0:-1]):
             message_block = []
             for byte_index, byte in enumerate(block[::-1], 1):
-                padding = self.get_custom_padding(byte_index)
-                for guess in range(256):
+                padding = self.get_padding_standard(byte_index)
+                start, end, step = self.check_range(block_index, byte_index)
+                for guess in range(start, end, step):
                     custom_block = self.get_custom_block(block, byte_index, byte,
                         guess, message_block)
                     req_string = "%s%s" % (self.hex_xor_128(custom_block, padding),
                         blocks[block_index+1].hex())
-                    self.debug_progress(block_index, byte_index, guess)
-                    if(self.url_request(req_string) and guess > 5):
+                    self.debug_progress(block_index+1, byte_index-1, guess)
+                    if(self.oracle(req_string)):
                         message_block.insert(0, self.get_xor(byte, guess))
                         plaintext[block_index] = "%s%s" % (chr(guess),
                             plaintext[block_index])

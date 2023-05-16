@@ -1,7 +1,10 @@
 # Padding Oracle Attack
 Padding Oracle Attack
 
-In this project you will experiment with a padding oracle attack against a toy web site hosted at crypto-class.appspot.com. Padding oracle vulnerabilities affect a wide variety of products, including secure tokens. This project will show how they can be exploited. Please see [Vaudenay's paper](https://www.iacr.org/archive/eurocrypt2002/23320530/cbc02_e02d.pdf) on padding oracle attack.
+
+Based on [Cryptography I course](https://www.coursera.org/learn/crypto) by Dan Boneh, Stanford.
+
+"In this project you will experiment with a padding oracle attack against a toy web site hosted at crypto-class.appspot.com. Padding oracle vulnerabilities affect a wide variety of products, including secure tokens. This project will show how they can be exploited. Please see [Vaudenay's paper](https://www.iacr.org/archive/eurocrypt2002/23320530/cbc02_e02d.pdf) on padding oracle attack.
 
 Suppose an attacker wishes to steal secret information from our target web site crypto-class.appspot.com. The attacker suspects that the web site embeds encrypted customer data in URL parameters such as this:
 
@@ -15,7 +18,7 @@ http://crypto-class.appspot.com/po?er="your ciphertext here" and observe the res
 
 To get you started here is a short Python script that sends a ciphertext supplied on the command line to the site and prints the resulting error code. You can extend this script (or write one from scratch) to implement the padding oracle attack. Once you decrypt the given ciphertext, please enter the decrypted message in the box below. 
 
-This project shows that when using encryption you must prevent padding oracle attacks by either using encrypt-then-MAC as in EAX or GCM, or if you must use MAC-then-encrypt then ensure that the site treats padding errors the same way it treats MAC errors.
+This project shows that when using encryption you must prevent padding oracle attacks by either using encrypt-then-MAC as in EAX or GCM, or if you must use MAC-then-encrypt then ensure that the site treats padding errors the same way it treats MAC errors."
 
 [To learn more about Padding Oracle Attack](https://www.youtube.com/watch?v=4EgD4PEatA8)
 

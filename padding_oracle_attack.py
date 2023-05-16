@@ -1,4 +1,5 @@
 import binascii
+from sys import argv
 from urllib import request, error
 
 class byte_indexOracleAttack():
@@ -24,7 +25,7 @@ class byte_indexOracleAttack():
             elif e.code == 403:
                 return False
             else:
-                exit()
+                exit("Unable to perform decoding: mismatched size blocks")
 
     def hex_to_byte(self, value):
         '''
@@ -43,9 +44,15 @@ class byte_indexOracleAttack():
 
     def get_xor(self, a, b):
         '''
-        Perform the xor between two values
+        Perform the xor between two bytes
         '''
         return bytes([a ^ b])
+
+    def get_xor_blocks(self, a, b):
+        '''
+        Perform the xor between two blocks with 16 bytes
+        '''
+        return f"{int(a, base=16) ^ int(b, base=16):032x}"
 
     def get_padding_standard(self, byte_index):
         '''
@@ -65,14 +72,14 @@ class byte_indexOracleAttack():
         else:
             return 0, 256, 1
 
-    def get_custom_block(self, block, byte_index, byte, guess, message_block):
-        custom_block = block[0:16 - byte_index]
+    def get_custom_block(self, block, byte, byte_index, guess, message_block, padding):
+        '''
+        Generate custom block after xor operation
+        '''
+        custom_block = block[:self.block_size - byte_index]
         byte_xor = self.get_xor(byte, guess)
         custom_block += byte_xor + b"".join(message_block)
-        return custom_block.hex()
-
-    def hex_xor_128(self, a, b):
-        return "{0:032x}".format(int(a, base=16) ^ int(b, base=16))
+        return self.get_xor_blocks(custom_block.hex(), padding)
 
     def debug_progress(self, block_index, byte_index, guess):
         print("Block: %02d - Byte: %02d - Guess: %03d" % (block_index,
@@ -87,6 +94,8 @@ class byte_indexOracleAttack():
         '''
         if query == None:
             query = self.query
+        if len(query) % self.block_size != 0:
+            exit("Unable to perform decoding: mismatched size blocks")
         query = self.hex_to_byte(query)
         blocks = self.split_blocks(query)
         plaintext = [""]*(len(blocks)-1)
@@ -96,10 +105,9 @@ class byte_indexOracleAttack():
                 padding = self.get_padding_standard(byte_index)
                 start, end, step = self.check_range(block_index, byte_index)
                 for guess in range(start, end, step):
-                    custom_block = self.get_custom_block(block, byte_index, byte,
-                        guess, message_block)
-                    req_string = "%s%s" % (self.hex_xor_128(custom_block, padding),
-                        blocks[block_index+1].hex())
+                    custom_block = self.get_custom_block(block, byte, byte_index,
+                        guess, message_block, padding)
+                    req_string = "%s%s" % (custom_block, blocks[block_index+1].hex())
                     self.debug_progress(block_index+1, byte_index-1, guess)
                     if(self.oracle(req_string)):
                         message_block.insert(0, self.get_xor(byte, guess))
@@ -108,11 +116,14 @@ class byte_indexOracleAttack():
                         self.debug_partial_result(plaintext)
                         break
                     if guess == 255:
-                        exit()
+                        exit("Unable to perform decoding")
             self.debug_partial_result("".join(plaintext))
         return plaintext
 
 if __name__ == '__main__':
     byte_index_oracle = byte_indexOracleAttack()
-    plaintext = byte_index_oracle.attack()
+    args = None
+    if len(argv) > 1:
+        args = argv[1]
+    plaintext = byte_index_oracle.attack(args)
     print("\nResult:\n%s" % ("".join(plaintext)))

@@ -2,7 +2,7 @@ import binascii
 from sys import argv
 from urllib import request, error
 
-class byte_indexOracleAttack():
+class PaddingOracleAttack():
     def __init__(self):
         self.block_size = 16
         self.url = "http://crypto-class.appspot.com/po?er="
@@ -96,6 +96,9 @@ class byte_indexOracleAttack():
         Return:
             String with 16-byte padding in hex
         '''
+        zero_padding = "00"*(16-byte_index)
+        hex_padding = f"{byte_index:02x}"*byte_index
+        return "%s%s" % (zero_padding, hex_padding)
 
     def check_range(self, block_index: int, byte_index: int)-> tuple:
         '''
@@ -133,7 +136,7 @@ class byte_indexOracleAttack():
         custom_block = block[:self.block_size - byte_index]
         byte_xor = self.get_xor(byte, guess)
         custom_block += byte_xor + b"".join(message_block)
-        return self.get_xor_blocks(custom_block.hex())
+        return custom_block.hex()
 
 
     def debug_progress(self, block_index: int, byte_index: int, guess: int)-> None:
@@ -184,9 +187,9 @@ class byte_indexOracleAttack():
         return plaintext
 
 if __name__ == '__main__':
-    byte_index_oracle = byte_indexOracleAttack()
+    padding_oracle = PaddingOracleAttack()
     args = None
     if len(argv) > 1:
         args = argv[1]
-    plaintext = byte_index_oracle.attack(args)
+    plaintext = padding_oracle.attack(args)
     print("\nResult:\n%s" % ("".join(plaintext)))
